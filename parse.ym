@@ -1,0 +1,73 @@
+%{
+#include <stdio.h>
+#include <time.h>
+
+#include "parse_handler.h"
+
+int yylex(void);
+void yyerror(char*);
+
+static struct tm wkTime;
+%}
+%token LINE INTEGER DOUBLE AMPM PTEXT DASH COLON PLUS TO BY NO
+%union
+{
+  int ival;
+  double dval;
+  char* string;
+}
+%%
+workout:
+			 day
+       times
+       mood
+       cardio
+       comments
+		   exercises
+
+day: INTEGER DASH INTEGER DASH INTEGER {
+        memset(&wkTime, 0, sizeof(struct tm));
+				wkTime.tm_year = $<ival>1 - 1900;
+				wkTime.tm_mon = $<ival>3 - 1;
+				wkTime.tm_mday = $<ival>5;
+			}
+
+times: time { wkOnStartTime(&wkTime); } TO time { wkOnEndTime(&wkTime); }
+time: INTEGER COLON INTEGER AMPM { wkTime.tm_hour = $<ival>1;
+                                   wkTime.tm_min = $<ival>3;
+                                   char* ampm = $<string>4; if (ampm[0] == 'P') wkTime.tm_hour += 12; }
+
+mood: LINE { wkOnMood($<string>1); }
+
+cardio: LINE { wkOnCardio($<string>1); }
+        | NO { wkOnCardio(0); }
+
+comments: LINE { wkOnComments($<string>1); }
+
+exercises:
+				 exercise exercises |
+         exercise
+
+exercise:
+				LINE { wkOnExerciseName($<string>1); }
+        sets
+
+sets:
+		set sets |
+    set
+
+set:
+			 INTEGER BY INTEGER { double weight = $<ival>3; wkOnSet($<ival>1, 0, weight, 0); }
+			 | INTEGER BY DOUBLE { wkOnSet($<ival>1, 0, $<dval>3, 0); }
+			 | INTEGER PLUS INTEGER BY INTEGER { double weight = $<ival>5; wkOnSet($<ival>1, $<ival>3, weight, 0); }
+			 | INTEGER PLUS INTEGER BY DOUBLE { wkOnSet($<ival>1, $<ival>3, $<dval>5, 0); }
+			 | INTEGER BY INTEGER PTEXT { double weight = $<ival>3; wkOnSet($<ival>1, 0, weight, $<string>4); }
+			 | INTEGER BY DOUBLE PTEXT { wkOnSet($<ival>1, 0, $<dval>3, $<string>4); }
+			 | INTEGER PLUS INTEGER BY INTEGER PTEXT { double weight = $<ival>5; wkOnSet($<ival>1, $<ival>3, weight, $<string>6); }
+			 | INTEGER PLUS INTEGER BY DOUBLE PTEXT { wkOnSet($<ival>1, $<ival>3, $<dval>5, $<string>6); }
+%%
+void yyerror(char* s)
+{
+  fprintf(stderr, "%s\n", s);
+  return;
+}
