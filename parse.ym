@@ -61,10 +61,10 @@ sets:
     set
 
 set:
-			 INTEGER BY INTEGER { double weight = $<ival>3; wkOnSet($<ival>1, 0, weight, 0); }
-			 | INTEGER BY DOUBLE { wkOnSet($<ival>1, 0, $<dval>3, 0); }
-			 | INTEGER PLUS INTEGER BY INTEGER { double weight = $<ival>5; wkOnSet($<ival>1, $<ival>3, weight, 0); }
-			 | INTEGER PLUS INTEGER BY DOUBLE { wkOnSet($<ival>1, $<ival>3, $<dval>5, 0); }
+			 INTEGER BY INTEGER { double weight = $<ival>3; wkOnSet($<ival>1, 0, weight, NULL); }
+			 | INTEGER BY DOUBLE { wkOnSet($<ival>1, 0, $<dval>3, NULL); }
+			 | INTEGER PLUS INTEGER BY INTEGER { double weight = $<ival>5; wkOnSet($<ival>1, $<ival>3, weight, NULL); }
+			 | INTEGER PLUS INTEGER BY DOUBLE { wkOnSet($<ival>1, $<ival>3, $<dval>5, NULL); }
 			 | INTEGER BY INTEGER PTEXT { double weight = $<ival>3; wkOnSet($<ival>1, 0, weight, $<string>4); }
 			 | INTEGER BY DOUBLE PTEXT { wkOnSet($<ival>1, 0, $<dval>3, $<string>4); }
 			 | INTEGER PLUS INTEGER BY INTEGER PTEXT { double weight = $<ival>5; wkOnSet($<ival>1, $<ival>3, weight, $<string>6); }
