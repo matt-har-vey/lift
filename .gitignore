@@ -1,5 +1,7 @@
 workout
+dolex
 *.o
 scan.c
 y.tab.c
+y.output
 data/

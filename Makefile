@@ -1,9 +1,11 @@
 LEX=flex
-YACC=yacc
+# YACC=yacc --debug --verbose
 LDLIBS=-ll -lsqlite3
-CC=CC -DSCANDEBUG
+# CC=CC -DSCANDEBUG
 
 workout: types.o db.o scan.o parse_handler.o workout.o
+dolex: scan.o
+
 scan.o: scan.l y.tab.c
 y.tab.c: parse.ym
 	$(YACC) parse.ym

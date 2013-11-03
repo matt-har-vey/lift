@@ -11,7 +11,7 @@ void yyerror(char*);
 
 static struct tm wkTime;
 %}
-%token LINE INTEGER DOUBLE AMPM PTEXT DASH COLON PLUS TO BY NO END
+%token LINE INTEGER DOUBLE AMPM PTEXT DASH COLON PLUS TO BY NO EOW
 %union
 {
   int ival;
@@ -19,7 +19,7 @@ static struct tm wkTime;
   char* string;
 }
 %%
-workouts: workout | workouts workout
+workouts: workout | workouts EOW workout
 
 workout:
 			 day
