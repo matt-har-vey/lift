@@ -11,4 +11,4 @@ y.tab.c: parse.ym
 	$(YACC) parse.ym
 
 clean:
-	$(RM) workout *.o scan.c y.tab.c
+	$(RM) workout dolex *.o scan.c y.tab.c y.output
