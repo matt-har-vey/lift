@@ -1,13 +1,12 @@
 LEX=flex
 YACC=yacc
-LDLIBS=-ll
-CC=cc -DWKDEBUG
+LDLIBS=-ll -lsqlite3
+CC=CC -DSCANDEBUG
 
-workout: scan.o workout.o parse_handler.o
+workout: types.o db.o scan.o parse_handler.o workout.o
 scan.o: scan.l y.tab.c
 y.tab.c: parse.ym
 	$(YACC) parse.ym
-workout.o: workout.c
 
 clean:
 	$(RM) workout *.o scan.c y.tab.c

@@ -4,12 +4,14 @@
 
 #include "parse_handler.h"
 
+int yydebug = 1;
+
 int yylex(void);
 void yyerror(char*);
 
 static struct tm wkTime;
 %}
-%token LINE INTEGER DOUBLE AMPM PTEXT DASH COLON PLUS TO BY NO
+%token LINE INTEGER DOUBLE AMPM PTEXT DASH COLON PLUS TO BY NO END
 %union
 {
   int ival;
@@ -17,13 +19,15 @@ static struct tm wkTime;
   char* string;
 }
 %%
+workouts: workout | workouts workout
+
 workout:
 			 day
        times
        mood
        cardio
        comments
-		   exercises
+		   exercises { wkOnEnd(); }
 
 day: INTEGER DASH INTEGER DASH INTEGER {
         memset(&wkTime, 0, sizeof(struct tm));
