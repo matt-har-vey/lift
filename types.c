@@ -6,10 +6,6 @@
 #define EXERCISES_BUFFER_SIZE 30
 #define SETS_BUFFER_SIZE 20
 
-size_t wkIsoDateTime(char* s, const struct tm* t) {
-	return strftime(s, ISO_DATE_BUF_SIZE, "%Y-%m-%dT%H:%M:%S", t);
-}
-
 wkSet* wkSetAllocInit() {
 	return calloc(1, sizeof(wkSet));
 }

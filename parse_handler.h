@@ -5,6 +5,8 @@
 #define WK_PH_OK         0
 #define WK_PH_ERR        -1
 
+int wkOnStartParse();
+
 int wkOnStartTime(const struct tm* t);
 
 int wkOnEndTime(const struct tm* t);
@@ -19,4 +21,6 @@ int wkOnExerciseName(const char* s);
 
 int wkOnSet(int reps, int rp_reps, double weight, const char* comment);
 
-int wkOnEnd();
+int wkOnEndWorkout();
+
+int wkOnEndParse();

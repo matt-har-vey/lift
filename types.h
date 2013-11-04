@@ -37,6 +37,3 @@ void wkWorkoutFreeDeep(wkWorkout* w);
 
 wkExercise* wkExerciseAllocInit();
 wkSet* wkSetAllocInit();
-
-#define ISO_DATE_BUF_SIZE 20
-size_t wkIsoDateTime(char* s, const struct tm* t);

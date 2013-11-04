@@ -39,15 +39,15 @@ static int sWkSimpleExecute(char* sql) {
 }
 
 int wkDbBegin() {
-	return sWkSimpleExecute("BEGIN;");
+	return sWkSimpleExecute("BEGIN");
 }
 
 int wkDbCommit() {
-	return sWkSimpleExecute("COMMIT;");
+	return sWkSimpleExecute("COMMIT");
 }
 
 int wkDbRollback() {
-	return sWkSimpleExecute("ROLLBACK;");
+	return sWkSimpleExecute("ROLLBACK");
 }
 
 int wkDbInsertWorkout(wkWorkout* w) {
@@ -55,19 +55,13 @@ int wkDbInsertWorkout(wkWorkout* w) {
 
 	sqlite3_stmt* stmt;
 
-	char start_text[ISO_DATE_BUF_SIZE];
-	char end_text[ISO_DATE_BUF_SIZE];
-
-	wkIsoDateTime(start_text, &(w->start));
-	wkIsoDateTime(end_text, &(w->end));
-
 	if (sqlite3_prepare_v2(sqlite, "INSERT INTO workouts (begin_time, end_time, mood, cardio, comments) VALUES (?,?,?,?,?)", -1, &stmt, NULL) != SQLITE_OK) {
 		sPrintSqliteError();
 		return DB_PREPARE;
 	}
 
-	sqlite3_bind_text(stmt, 1, start_text, -1, SQLITE_STATIC);
-	sqlite3_bind_text(stmt, 2, end_text, -1, SQLITE_STATIC);
+	sqlite3_bind_int(stmt, 1, timelocal(&(w->start)));
+	sqlite3_bind_int(stmt, 2, timelocal(&(w->end)));
 	sqlite3_bind_text(stmt, 3, w->mood, -1, SQLITE_STATIC);
 	sqlite3_bind_text(stmt, 4, w->cardio, -1, SQLITE_STATIC);
 	sqlite3_bind_text(stmt, 5, w->comments, -1, SQLITE_STATIC);
@@ -111,15 +105,14 @@ int wkDbInsertSet(wkSet* set) {
 
 	sqlite3_stmt* stmt;
 
-	char start_text[ISO_DATE_BUF_SIZE];
-	wkIsoDateTime(start_text, &(set->exercise->workout->start));
+	struct tm* workout_begin = &(set->exercise->workout->start);
 
 	if (sqlite3_prepare_v2(sqlite, "INSERT INTO sets (workout_begin, exercise_id, position, sequence, reps, weight, rp_reps, comments) VALUES (?,?,?,?,?,?,?,?)", -1, &stmt, NULL) != SQLITE_OK) {
 		sPrintSqliteError();
 		return DB_PREPARE;
 	}
 
-	sqlite3_bind_text(stmt, 1, start_text, -1, SQLITE_STATIC);
+	sqlite3_bind_int64(stmt, 1, timelocal(workout_begin));
 	sqlite3_bind_int(stmt, 2, set->exercise->id);
 	sqlite3_bind_int(stmt, 3, set->exercise->position);
 	sqlite3_bind_int(stmt, 4, set->sequence);

@@ -7,24 +7,37 @@
 
 #ifdef PHDEBUG
 static void sWkPrintTime(const char* prefix, const struct tm* t) {
-  char buf[ISO_DATE_BUF_SIZE];
-	wkIsoDateTime(buf, t);
-	printf("%s: %s\n", prefix, buf);
+	printf("%s: %s\n", prefix, asctime(t));
+}
+
+static void* log_callback_sqlite3(void* ctx, int rcode, char* message) {
+	fprintf(stderr, "%d %s\n", rcode, message);
+	return NULL;
 }
 #endif
 
 static wkWorkout* workout;
 static wkExercise* exercise;
 static int exercise_position, set_sequence;
-static int db_ok;
+static int all_good;
+
+int wkOnStartParse() {
+#ifdef PHDEBUG
+	sqlite3_config(SQLITE_CONFIG_LOG, &log_callback_sqlite3);
+#endif
+	all_good = 1;
+	if (all_good) all_good = (wkDbConnect() == DB_OK);
+	if (all_good) all_good = (wkDbBegin() == DB_OK);
+	int ret = all_good ? WK_PH_OK : WK_PH_ERR;
+#ifdef PHDEBUG
+	printf("start parse returning %d\n", ret);
+#endif
+	return ret;
+}
 
 static int sWkOnWorkout() {
-	db_ok = 1;
-	if (db_ok) db_ok = (wkDbConnect() == DB_OK);
-	if (db_ok) db_ok = (wkDbBegin() == DB_OK);
-	if (db_ok) db_ok = (wkDbInsertWorkout(workout) == DB_OK);
-
-	return db_ok ? WK_PH_OK : WK_PH_ERR;
+	if (all_good) all_good = (wkDbInsertWorkout(workout) == DB_OK);
+	return all_good ? WK_PH_OK : WK_PH_ERR;
 }
 
 int wkOnStartTime(const struct tm* t) {
@@ -96,9 +109,9 @@ int wkOnExerciseName(const char* s) {
 	set_sequence = 0;
 
 	int exercise_id = wkDbGetExerciseId(s);
-	if (exercise_id < 0) {
+	if (exercise_id <= 0) {
 		exercise = NULL;
-		db_ok = 0;
+		all_good = 0;
 		fprintf(stderr, "Exercise [%s] was not found.\n", s);
 		return WK_PH_ERR;
 	}
@@ -137,22 +150,25 @@ int wkOnSet(int reps, int rp_reps, double weight, const char* comment) {
 		if (comment != NULL)
 			set->comment = strdup(comment);
 
-		if (db_ok) db_ok = (wkDbInsertSet(set) == DB_OK);
-		return db_ok ? WK_PH_OK : WK_PH_ERR;
+		if (all_good) all_good = (wkDbInsertSet(set) == DB_OK);
+		return all_good ? WK_PH_OK : WK_PH_ERR;
 	} else {
 		return WK_PH_ERR;
 	}
 }
 
-int wkOnEnd() {
-	if (db_ok) {
+int wkOnEndWorkout() {
+	if (workout) wkWorkoutFreeDeep(workout);
+	return WK_PH_OK;
+}
+
+int wkOnEndParse() {
+	if (all_good)
 		wkDbCommit();
-	} else {
+	else
 		wkDbRollback();
-	}
 
 	wkDbDisconnect();
-
-	if (workout) wkWorkoutFreeDeep(workout);
-	return 0;
+	return WK_PH_OK;
 }
+

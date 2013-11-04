@@ -4,74 +4,132 @@
 
 #include "parse_handler.h"
 
-/* int yydebug = 1; */
-
 int yylex(void);
 void yyerror(char*);
+extern int wk_lex_line;
 
 static struct tm wkTime;
+
 %}
-%token LINE INTEGER DOUBLE AMPM PTEXT DASH COLON PLUS TO BY NO EOW
+
+%token DASH COLON TO AM PM NO PLUS BY EOW
+%token <string> LINE PTEXT AMPM
+%token <ival> INTEGER
+%token <dval> DOUBLE
+
 %union
 {
   int ival;
   double dval;
   char* string;
 }
+
 %%
-workouts: workout | workouts EOW workout
+batch:
+			{ wkOnStartParse(); }
+		workouts
+			{ wkOnEndParse(); }
+		;
+
+workouts:
+		workout
+		| workouts EOW workout
+		;
 
 workout:
-			 day
-       times
-       mood
-       cardio
-       comments
-		   exercises { wkOnEnd(); }
+		day
+		times
+		mood
+		cardio
+		comments
+		exercises { wkOnEndWorkout(); }
+		;
 
-day: INTEGER DASH INTEGER DASH INTEGER {
-        memset(&wkTime, 0, sizeof(struct tm));
-				wkTime.tm_year = $<ival>1 - 1900;
-				wkTime.tm_mon = $<ival>3 - 1;
-				wkTime.tm_mday = $<ival>5;
+day:
+		INTEGER DASH INTEGER DASH INTEGER
+			{
+				memset(&wkTime, 0, sizeof(struct tm));
+				wkTime.tm_year = $1 - 1900;
+				wkTime.tm_mon = $3 - 1;
+				wkTime.tm_mday = $5;
 			}
+		;
 
-times: time { wkOnStartTime(&wkTime); } TO time { wkOnEndTime(&wkTime); }
-time: INTEGER COLON INTEGER AMPM { wkTime.tm_hour = $<ival>1;
-                                   wkTime.tm_min = $<ival>3;
-                                   char* ampm = $<string>4; if (ampm[0] == 'P') wkTime.tm_hour += 12; }
+times:
+		time
+			{ wkOnStartTime(&wkTime); }
+		TO time
+			{ wkOnEndTime(&wkTime); }
+		;
 
-mood: LINE { wkOnMood($<string>1); }
+time:
+		INTEGER COLON INTEGER AM
+			{
+				wkTime.tm_hour = $1;
+				wkTime.tm_min = $3;
+			}
+		| INTEGER COLON INTEGER PM
+			{
+				wkTime.tm_hour = $1 + 12;
+				wkTime.tm_min = $3;
+			}
+		;
 
-cardio: LINE { wkOnCardio($<string>1); }
-        | NO { wkOnCardio(0); }
 
-comments: LINE { wkOnComments($<string>1); }
+mood:
+		LINE
+			{ wkOnMood($1); }
+		;
+
+cardio:
+		LINE
+			{ wkOnCardio($1); }
+		| NO
+			{ wkOnCardio(NULL); }
+		;
+
+comments:
+		LINE
+			{ wkOnComments($1); }
+		;
 
 exercises:
-				 exercise exercises |
-         exercise
+		exercise
+		| exercise exercises
+		;
 
 exercise:
-				LINE { wkOnExerciseName($<string>1); }
-        sets
+		LINE
+			{ wkOnExerciseName($1); }
+		sets
+		;
 
 sets:
-		set sets |
-    set
+		set
+		| set sets
+		;
 
 set:
-			 INTEGER BY INTEGER { double weight = $<ival>3; wkOnSet($<ival>1, 0, weight, NULL); }
-			 | INTEGER BY DOUBLE { wkOnSet($<ival>1, 0, $<dval>3, NULL); }
-			 | INTEGER PLUS INTEGER BY INTEGER { double weight = $<ival>5; wkOnSet($<ival>1, $<ival>3, weight, NULL); }
-			 | INTEGER PLUS INTEGER BY DOUBLE { wkOnSet($<ival>1, $<ival>3, $<dval>5, NULL); }
-			 | INTEGER BY INTEGER PTEXT { double weight = $<ival>3; wkOnSet($<ival>1, 0, weight, $<string>4); }
-			 | INTEGER BY DOUBLE PTEXT { wkOnSet($<ival>1, 0, $<dval>3, $<string>4); }
-			 | INTEGER PLUS INTEGER BY INTEGER PTEXT { double weight = $<ival>5; wkOnSet($<ival>1, $<ival>3, weight, $<string>6); }
-			 | INTEGER PLUS INTEGER BY DOUBLE PTEXT { wkOnSet($<ival>1, $<ival>3, $<dval>5, $<string>6); }
+		INTEGER BY INTEGER
+			{ double weight = $3; wkOnSet($1, 0, weight, NULL); }
+		| INTEGER BY DOUBLE
+			{ wkOnSet($1, 0, $3, NULL); }
+		| INTEGER PLUS INTEGER BY INTEGER
+			{ double weight = $5; wkOnSet($1, $3, weight, NULL); }
+		| INTEGER PLUS INTEGER BY DOUBLE
+			{ wkOnSet($1, $3, $5, NULL); }
+		| INTEGER BY INTEGER PTEXT
+			{ double weight = $3; wkOnSet($1, 0, weight, $4); }
+		| INTEGER BY DOUBLE PTEXT
+			{ wkOnSet($1, 0, $3, $4); }
+		| INTEGER PLUS INTEGER BY INTEGER PTEXT
+			{ double weight = $5; wkOnSet($1, $3, weight, $6); }
+		| INTEGER PLUS INTEGER BY DOUBLE PTEXT
+			{ wkOnSet($1, $3, $5, $6); }
+		;
 %%
 void yyerror(char* s)
 {
-  fprintf(stderr, "%s\n", s);
+  fprintf(stderr, "line %d: %s\n", wk_lex_line, s);
   return;
 }
