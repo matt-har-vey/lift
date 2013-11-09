@@ -9,11 +9,6 @@
 static void sWkPrintTime(const char* prefix, const struct tm* t) {
 	printf("%s: %s\n", prefix, asctime(t));
 }
-
-static void* log_callback_sqlite3(void* ctx, int rcode, char* message) {
-	fprintf(stderr, "%d %s\n", rcode, message);
-	return NULL;
-}
 #endif
 
 static wkWorkout* workout;
@@ -22,22 +17,13 @@ static int exercise_position, set_sequence;
 static int all_good;
 
 int wkOnStartParse() {
-#ifdef PHDEBUG
-	sqlite3_config(SQLITE_CONFIG_LOG, &log_callback_sqlite3);
-#endif
 	all_good = 1;
-	if (all_good) all_good = (wkDbConnect() == DB_OK);
-	if (all_good) all_good = (wkDbBegin() == DB_OK);
+	if (all_good) all_good = (wk_db_open() == DB_OK);
 	int ret = all_good ? WK_PH_OK : WK_PH_ERR;
 #ifdef PHDEBUG
 	printf("start parse returning %d\n", ret);
 #endif
 	return ret;
-}
-
-static int sWkOnWorkout() {
-	if (all_good) all_good = (wkDbInsertWorkout(workout) == DB_OK);
-	return all_good ? WK_PH_OK : WK_PH_ERR;
 }
 
 int wkOnStartTime(const struct tm* t) {
@@ -51,7 +37,7 @@ int wkOnStartTime(const struct tm* t) {
 	exercise_position = 0;
 	set_sequence = 0;
 
-	return 0;
+	return WK_PH_OK;
 }
 
 int wkOnEndTime(const struct tm* t) {
@@ -60,7 +46,7 @@ int wkOnEndTime(const struct tm* t) {
 #endif
 
 	workout->end = *t;
-	return 0;
+	return WK_PH_OK;
 }
 
 int wkOnMood(const char* s) {
@@ -69,7 +55,7 @@ int wkOnMood(const char* s) {
 #endif
 
 	workout->mood = strdup(s);
-	return 0;
+	return WK_PH_OK;
 }
 
 int wkOnCardio(const char* s) {
@@ -85,7 +71,7 @@ int wkOnCardio(const char* s) {
 	else
 		workout->cardio = 0;
 
-	return 0;
+	return WK_PH_OK;
 }
 
 int wkOnComments(const char* s) {
@@ -95,9 +81,7 @@ int wkOnComments(const char* s) {
 
 	workout->comments = strdup(s);
 
-	sWkOnWorkout();
-
-	return 0;
+	return WK_PH_OK;
 }
 
 int wkOnExerciseName(const char* s) {
@@ -108,16 +92,7 @@ int wkOnExerciseName(const char* s) {
 	exercise_position += 1;
 	set_sequence = 0;
 
-	int exercise_id = wkDbGetExerciseId(s);
-	if (exercise_id <= 0) {
-		exercise = NULL;
-		all_good = 0;
-		fprintf(stderr, "Exercise [%s] was not found.\n", s);
-		return WK_PH_ERR;
-	}
-
 	exercise = wkExerciseAllocInit();
-	exercise->id = exercise_id;
 	exercise->name = strdup(s);
 	exercise->position = exercise_position;
 	exercise->workout = workout;
@@ -150,25 +125,26 @@ int wkOnSet(int reps, int rp_reps, double weight, const char* comment) {
 		if (comment != NULL)
 			set->comment = strdup(comment);
 
-		if (all_good) all_good = (wkDbInsertSet(set) == DB_OK);
-		return all_good ? WK_PH_OK : WK_PH_ERR;
+		exercise->sets[exercise->num_sets] = set;
+		exercise->num_sets += 1;
+
+		return WK_PH_OK;
 	} else {
 		return WK_PH_ERR;
 	}
 }
 
 int wkOnEndWorkout() {
-	if (workout) wkWorkoutFreeDeep(workout);
-	return WK_PH_OK;
+	if (workout) {
+		if (all_good) all_good = (wk_db_insert_workout(workout) == DB_OK);
+	 	wkWorkoutFreeDeep(workout);
+	}
+
+	return all_good ? WK_PH_OK : WK_PH_ERR;
 }
 
 int wkOnEndParse() {
-	if (all_good)
-		wkDbCommit();
-	else
-		wkDbRollback();
-
-	wkDbDisconnect();
+	wk_db_close(all_good == 1);
 	return WK_PH_OK;
 }
 

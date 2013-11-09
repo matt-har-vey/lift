@@ -1,28 +1,29 @@
 #pragma once
 
-struct wkExerciseStruct;
-struct wkSetStruct;
+#include <time.h>
 
-typedef struct wkWorkoutStruct {
+struct wkExercise;
+struct wkSet;
+
+typedef struct wkWorkout{
 	struct tm start;
 	struct tm end;
 	char* mood;
 	char* cardio;
 	char* comments;
 	int num_exercises;
-	struct wkExerciseStruct** exercises;
+	struct wkExercise** exercises;
 } wkWorkout;
 
-typedef struct wkExerciseStruct {
+typedef struct wkExercise {
 	wkWorkout* workout;
-	int position;
-	int id;
 	char* name;
+	int position;
 	int num_sets;
-	struct wkSetStruct** sets;
+	struct wkSet** sets;
 } wkExercise;
 
-typedef struct wkSetStruct {
+typedef struct wkSet {
 	wkExercise* exercise;
 	int sequence;
 	int reps;
