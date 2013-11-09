@@ -4,14 +4,11 @@
 #include <time.h>
 #include <stdlib.h>
 
-#include <stdio.h>
-#define SD(x) fprintf(stderr, "%s\n", x);
-
 #define COLL_WORKOUTS "lift.workouts"
 
 mongo conn[1];
 
-int wkDbConnect() {
+int wk_db_open() {
 	mongo_init(conn);
 
 	int status = mongo_client(conn, "127.0.0.1", 27017);
@@ -23,24 +20,13 @@ int wkDbConnect() {
 	}
 }
 
-int wkDbDisconnect() {
+int wk_db_close() {
 	mongo_destroy(conn);
 	return DB_OK;
 }
 
-int wkDbBegin() {
-	return DB_OK;
-}
-
-int wkDbCommit() {
-	return DB_OK;
-}
-
-int wkDbRollback() {
-	return DB_OK;
-}
-
-int wkDbInsertWorkout(wkWorkout* workout) {
+int wk_db_insert_workout(wkWorkout* workout) {
+	char index_string[100];
 	bson b[1];
 	bson_init(b);
 
@@ -57,18 +43,40 @@ int wkDbInsertWorkout(wkWorkout* workout) {
 		bson_append_string(b, "cardio", workout->cardio);
 	bson_append_string(b, "comments", workout->comments);
 
+	bson_append_start_array(b, "exercises");
+	for (int i = 0; i < workout->num_exercises; i++) {
+		snprintf(index_string, 100, "%d", i);
+		bson_append_start_object(b, index_string);
+
+		wkExercise* exercise = workout->exercises[i];
+
+		bson_append_string(b, "name", exercise->name);
+
+		bson_append_start_array(b, "sets");
+		for (int j = 0; j < exercise->num_sets; j++) {
+			wkSet* set = exercise->sets[j];
+			snprintf(index_string, 100, "%d", j);
+			bson_append_start_object(b, index_string);
+
+			bson_append_int(b, "reps", set->reps);
+			bson_append_double(b, "weight", set->weight);
+			if (set->rp_reps > 0)
+				bson_append_int(b, "restPauseReps", set->rp_reps);
+			if (set->comment)
+				bson_append_string(b, "comment", set->comment);
+
+			bson_append_finish_object(b);
+		}
+		bson_append_finish_array(b);
+
+		bson_append_finish_object(b);
+	}
+	bson_append_finish_array(b);
+
 	bson_finish(b);
 
 	int res = mongo_insert(conn, COLL_WORKOUTS, b, NULL);
 
 	bson_destroy(b);
 	return res == MONGO_OK ? DB_OK : DB_EXECUTION;
-}
-
-int wkDbGetExerciseId(const char* exercise_name) {
-	return 1;
-}
-
-int wkDbInsertSet(wkSet* set) {
-	return DB_OK;
 }

@@ -1,4 +1,6 @@
 workout
+workout_sqlite3
+workout_mongo
 dolex
 *.o
 scan.c
