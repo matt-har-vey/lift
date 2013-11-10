@@ -2,8 +2,18 @@
 
 #include <time.h>
 #include <stdio.h>
+#include <string.h>
 
 #define DB_FILE "/Users/matt/lift/data/lift.sqlite3"
+#define DOES_NOT_EXTEND -1
+
+typedef struct keyed_set {
+	time_t workout_begin;
+	int exercise_id;
+	int position;
+	int sequence;
+	wkSet* set;
+} keyed_set;
 
 #ifdef SQLDEBUG
 static void* log_callback_sqlite3(void* ctx, int rcode, char* message) {
@@ -54,29 +64,27 @@ static int s_wk_db_get_exercise_id(const char* exercise_name) {
 	return exercise_id;
 }
 
-static int s_wk_db_insert_set(time_t workout_begin, int exercise_id, wkSet* set) {
+static int s_wk_db_insert_set(keyed_set* keyed_set, int extends_sequence) {
 	int res;
+	wkSet* set = keyed_set->set;
 
 	sqlite3_stmt* stmt;
 
-	if (sqlite3_prepare_v2(sqlite, "INSERT INTO sets (workout_begin, exercise_id, position, sequence, reps, weight, rp_reps, comments) VALUES (?,?,?,?,?,?,?,?)", -1, &stmt, NULL) != SQLITE_OK) {
+	if (sqlite3_prepare_v2(sqlite, "INSERT INTO sets (workout_begin, exercise_id, position, sequence, extends_sequence, reps, weight, comments) VALUES (?,?,?,?,?,?,?,?)", -1, &stmt, NULL) != SQLITE_OK) {
 		s_print_sqlite_error();
 		return DB_PREPARE;
 	}
 
-	sqlite3_bind_int64(stmt, 1, workout_begin);
-	sqlite3_bind_int(stmt, 2, exercise_id);
-	sqlite3_bind_int(stmt, 3, set->exercise->position);
-	sqlite3_bind_int(stmt, 4, set->sequence);
-	sqlite3_bind_int(stmt, 5, set->reps);
-	sqlite3_bind_double(stmt, 6, set->weight);
-
-	int extend_reps = set->extend_reps;
-	if (extend_reps > 0)
-		sqlite3_bind_int(stmt, 7, extend_reps);
+	sqlite3_bind_int64(stmt, 1, keyed_set->workout_begin);
+	sqlite3_bind_int(stmt, 2, keyed_set->exercise_id);
+	sqlite3_bind_int(stmt, 3, keyed_set->position);
+	sqlite3_bind_int(stmt, 4, keyed_set->sequence);
+	if (extends_sequence == DOES_NOT_EXTEND)
+		sqlite3_bind_null(stmt, 5);
 	else
-		sqlite3_bind_null(stmt, 7);
-
+		sqlite3_bind_int(stmt, 5, extends_sequence);
+	sqlite3_bind_int(stmt, 6, set->reps);
+	sqlite3_bind_double(stmt, 7, set->weight);
 	sqlite3_bind_text(stmt, 8, set->comment, -1, SQLITE_STATIC);
 
 	res = sqlite3_step(stmt);
@@ -154,6 +162,7 @@ int wk_db_insert_workout(wkWorkout* w) {
 	if (res != DB_OK)
 		return res;
 
+	int position = 1;
 	for (int i = 0; i < w->num_exercises; i++) {
 		wkExercise* exercise = w->exercises[i];
 		const char* exercise_name = exercise->name;
@@ -163,9 +172,36 @@ int wk_db_insert_workout(wkWorkout* w) {
 			fprintf(stderr, "Exercise [%s] was not found.\n", exercise_name);
 			return DB_FIXTURE;
 		} else {
-			for (int j = 0; j < exercise->num_sets; j++)
-				s_wk_db_insert_set(workout_begin, exercise_id, exercise->sets[j]);
+			keyed_set keyed_set;
+			keyed_set.workout_begin = workout_begin;
+			keyed_set.exercise_id = exercise_id;
+			keyed_set.position = position;
+
+			int sequence = 1;
+			for (int j = 0; j < exercise->num_sets; j++) {
+				wkSet* set = exercise->sets[j];
+				keyed_set.set = set;
+				keyed_set.sequence = sequence;
+
+				s_wk_db_insert_set(&keyed_set, DOES_NOT_EXTEND);
+				if (set->extend_reps > 0) {
+					wkSet extension;
+					memset(&extension, 0, sizeof(wkSet));
+					extension.exercise = set->exercise;
+					extension.reps = set->extend_reps;
+					extension.weight = set->extend_weight;
+
+					sequence++;
+					keyed_set.set = &extension;
+					keyed_set.sequence = sequence;
+					s_wk_db_insert_set(&keyed_set, sequence - 1);
+				}
+
+				sequence++;
+			}
 		}
+
+		position++;
 	}
 
 	return DB_OK;

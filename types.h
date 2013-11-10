@@ -18,14 +18,12 @@ typedef struct wkWorkout{
 typedef struct wkExercise {
 	wkWorkout* workout;
 	char* name;
-	int position;
 	int num_sets;
 	struct wkSet** sets;
 } wkExercise;
 
 typedef struct wkSet {
 	wkExercise* exercise;
-	int sequence;
 	int reps;
 	double weight;
 	int extend_reps;

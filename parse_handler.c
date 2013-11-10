@@ -94,7 +94,6 @@ int wkOnExerciseName(const char* s) {
 
 	exercise = wkExerciseAllocInit();
 	exercise->name = strdup(s);
-	exercise->position = exercise_position;
 	exercise->workout = workout;
 
 	workout->exercises[workout->num_exercises] = exercise;
@@ -117,10 +116,10 @@ int wkOnSet(int reps, double weight,
 	if (exercise != NULL) {
 		wkSet* set = wkSetAllocInit();
 		set->exercise = exercise;
-		set->sequence = set_sequence;
 		set->reps = reps;
 		set->weight = weight;
 		set->extend_reps = extend_reps;
+		set->extend_weight = extend_weight;
 		if (comment != NULL)
 			set->comment = strdup(comment);
 
