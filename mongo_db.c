@@ -60,8 +60,8 @@ int wk_db_insert_workout(wkWorkout* workout) {
 
 			bson_append_int(b, "reps", set->reps);
 			bson_append_double(b, "weight", set->weight);
-			if (set->rp_reps > 0)
-				bson_append_int(b, "restPauseReps", set->rp_reps);
+			if (set->extend_reps > 0)
+				bson_append_int(b, "restPauseReps", set->extend_reps);
 			if (set->comment)
 				bson_append_string(b, "comment", set->comment);
 

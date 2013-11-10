@@ -103,14 +103,13 @@ int wkOnExerciseName(const char* s) {
 	return WK_PH_OK;
 }
 
-int wkOnSet(int reps, int rp_reps, double weight, const char* comment) {
+int wkOnSet(int reps, double weight,
+	int extend_reps, double extend_weight, const char* comment) {
 #ifdef PHDEBUG
 	if (comment)
-		printf("%d+%dx%.1f (%s) ", reps, rp_reps, weight, comment);
-	else if (rp_reps != 0)
-		printf("%d+%dx%.1f ", reps, rp_reps, weight);
+		printf("%dx%.1f+%dx%.1f (%s) ", reps, weight, extend_reps, extend_weight, comment);
 	else
-		printf("%dx%.1f ", reps, weight);
+		printf("%dx%.1f+%dx%.1f (%s) ", reps, weight, extend_reps, extend_weight);
 #endif
 
 	set_sequence += 1;
@@ -121,7 +120,7 @@ int wkOnSet(int reps, int rp_reps, double weight, const char* comment) {
 		set->sequence = set_sequence;
 		set->reps = reps;
 		set->weight = weight;
-		set->rp_reps = rp_reps;
+		set->extend_reps = extend_reps;
 		if (comment != NULL)
 			set->comment = strdup(comment);
 

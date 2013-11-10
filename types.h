@@ -27,8 +27,9 @@ typedef struct wkSet {
 	wkExercise* exercise;
 	int sequence;
 	int reps;
-	int rp_reps;
 	double weight;
+	int extend_reps;
+	double extend_weight;
 	char* comment;
 } wkSet;
 

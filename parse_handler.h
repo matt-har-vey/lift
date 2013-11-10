@@ -19,7 +19,8 @@ int wkOnComments(const char* s);
 
 int wkOnExerciseName(const char* s);
 
-int wkOnSet(int reps, int rp_reps, double weight, const char* comment);
+int wkOnSet(int reps, double weight,
+	int extend_reps, double extend_weight, const char* comment);
 
 int wkOnEndWorkout();
 

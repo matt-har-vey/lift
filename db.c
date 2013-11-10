@@ -71,9 +71,9 @@ static int s_wk_db_insert_set(time_t workout_begin, int exercise_id, wkSet* set)
 	sqlite3_bind_int(stmt, 5, set->reps);
 	sqlite3_bind_double(stmt, 6, set->weight);
 
-	int rp_reps = set->rp_reps;
-	if (rp_reps > 0)
-		sqlite3_bind_int(stmt, 7, rp_reps);
+	int extend_reps = set->extend_reps;
+	if (extend_reps > 0)
+		sqlite3_bind_int(stmt, 7, extend_reps);
 	else
 		sqlite3_bind_null(stmt, 7);
 
