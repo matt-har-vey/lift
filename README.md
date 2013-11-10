@@ -16,5 +16,3 @@ This also helps keep my C muscles trained. The main make target is
 (Freaking Mac has to have funky file extensions like .ym and .dylib.) and
 then inserts it into the database. There's no check yet to ensure existing
 data is not duplicated.
-
-Rest-pause was covered, but drop sets need changes to schema and grammar.
