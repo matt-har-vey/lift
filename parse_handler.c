@@ -108,7 +108,7 @@ int wkOnSet(int reps, double weight,
 	if (comment)
 		printf("%dx%.1f+%dx%.1f (%s) ", reps, weight, extend_reps, extend_weight, comment);
 	else
-		printf("%dx%.1f+%dx%.1f (%s) ", reps, weight, extend_reps, extend_weight);
+		printf("%dx%.1f+%dx%.1f", reps, weight, extend_reps, extend_weight);
 #endif
 
 	set_sequence += 1;
@@ -133,6 +133,9 @@ int wkOnSet(int reps, double weight,
 }
 
 int wkOnEndWorkout() {
+#ifdef PHDEBUG
+	printf("End workout\n");
+#endif
 	if (workout) {
 		if (all_good) all_good = (wk_db_insert_workout(workout) == DB_OK);
 	 	wkWorkoutFreeDeep(workout);
@@ -142,6 +145,9 @@ int wkOnEndWorkout() {
 }
 
 int wkOnEndParse() {
+#ifdef PHDEBUG
+	printf("End parse\n");
+#endif
 	wk_db_close(all_good == 1);
 	return WK_PH_OK;
 }

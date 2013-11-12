@@ -143,7 +143,7 @@ int wk_db_insert_workout(wkWorkout* w) {
 
 	time_t workout_begin = timelocal(&(w->start));
 
-	sqlite3_bind_int(stmt, 1, workout_begin);
+	sqlite3_bind_int64(stmt, 1, workout_begin);
 	sqlite3_bind_int(stmt, 2, timelocal(&(w->end)));
 	sqlite3_bind_text(stmt, 3, w->mood, -1, SQLITE_STATIC);
 	sqlite3_bind_text(stmt, 4, w->cardio, -1, SQLITE_STATIC);
