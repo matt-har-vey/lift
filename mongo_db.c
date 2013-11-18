@@ -27,13 +27,16 @@ int wk_db_close() {
 
 int wk_db_insert_workout(wkWorkout* workout) {
 	char index_string[100];
-	bson b[1];
+	bson b[1], q[1];
 	bson_init(b);
+	bson_init(q);
 
 	time_t tt_start = timelocal(&workout->start);
 	bson_oid_t oid;
 	memset(&oid.bytes, 0, 12 * sizeof(char));
 	memcpy(&oid.bytes, &tt_start, sizeof(time_t));
+
+	bson_append_oid(q, "_id", &oid);
 
 	bson_append_oid(b, "_id", &oid);
 	bson_append_time_t(b, "start", timelocal(&workout->start));
@@ -78,9 +81,12 @@ int wk_db_insert_workout(wkWorkout* workout) {
 	bson_append_finish_array(b);
 
 	bson_finish(b);
+	bson_finish(q);
 
-	int res = mongo_insert(conn, COLL_WORKOUTS, b, NULL);
+	int res = mongo_update(conn, COLL_WORKOUTS, q, b, MONGO_UPDATE_UPSERT, NULL);
 
 	bson_destroy(b);
+	bson_destroy(q);
+
 	return res == MONGO_OK ? DB_OK : DB_EXECUTION;
 }

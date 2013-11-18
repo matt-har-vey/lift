@@ -4,64 +4,159 @@
 	<title>Workouts</title>
 	<script src="http://code.jquery.com/jquery-2.0.3.min.js" type="text/javascript"></script>
 	<style type="text/css">
-		div.workout {
-			margin: 1em; padding: 1em;
+		body { font-family: "Gill Sans", sans-serif; color: #444; }
+		div.workout, #exercises div.exercise {
+			margin: 1em;
 			border: 1px solid black;
 			background-color: #eef;
 			overflow: auto;
 		}
 
-		div.wData { float: left; width: 25em; margin-right: 2em; }
-		div.wData div { margin-top: 0.5em; }
-		.wDate { font-size: 150%; }
-		div.exercises { float: left; }
-		div.exercise { margin-top: 0.5em; }
-		span.set { display: inline-block; margin-right: 2em; }
+    #exercises div.eName { margin-top: 1em; }
+    #exercises table { margin-left: 1em; margin-top: 0.5em; margin-bottom: 1em; }
+
+		div.wData { float: left; width: 40%; padding-top: 1em; padding-bottom: 1em; }
+		div.exercises { float: left; width: 60%; padding-top: 1em; padding-bottom: 1em; }
+
+		div.wData div { margin-top: 0.5em; margin-left: 1em; }
+		div.wData div.wDate, #exercises div.eName { font-size: 150%; margin-left: 0.666em; color: black; }
+
+		div.exercise { margin: 1em 1em 0.5em 2em; clear: left; overflow: auto; }
+		.eName { color: black; }
+		span.set { display: block; float: left; margin-right: 2em; min-width: 5em; }
+		span.sComment { display: block; font-size: 75%; }
+
+    th { text-align: left; color: black; }
+    th, tr, td { margin:0; padding: 0; }
+    th.eDate { width: 15em; }
+    th.eSets { width: 25em; }
+    th.eVol {}
 	</style>
 </head>
 <body>
-	<div id="workouts">
-	</div>
+	<nav>
+		<a id="workoutsNavLink" href="#workouts">Workouts</a>
+		<a id="exercisesNavLink" href="#exercises">Exercises</a>
+	</nav>
+	<div id="workouts"></div>
+	<div id="exercises"></div>
 	<script type="text/javascript">
-		var appendWorkout = function(container, workout) {
-			var wDiv = $('<div class="workout"></div>');
-			var wData = $('<div class="wData"/>');
-			var wDate = $('<div class="wDate">' + new Date(workout.start['$date']).toDateString() + '</div>');
-			var wMood = $('<div class="wMood">' + workout.mood + '</div>');
-			var wComments = $('<div class="wComments">' + workout.comments + '</div>');
+		(function () {
+			var formatTime = function(d) {
+				return d.toLocaleTimeString().replace(/:\d\d /,"");
+			};
 
-			var esDiv = $('<div class="exercises"></div>');
-			$.each(workout.exercises, function(index, exercise) {
-					var eDiv = $('<div class="exercise"></div>');
-					var nameDiv = $('<div class="eName">' + exercise.name + '</div>');
-					eDiv.append(nameDiv);
-					esDiv.append(eDiv);
-					$.each(exercise.sets, function(index, set) {
-						var setSpan = $('<span class="set">' + set.reps + 'x' + set.weight + '</span>');
-						if (set.set)
-							setSpan.text(setSpan.text() + '+' + set.set.reps +'x' + set.set.weight + ' ');
-						else
-							setSpan.text(setSpan.text() + ' ');
-						if (set.comment)
-							setSpan.append($('<span class="sComment">(' + set.comment + ')</span>'));
-						eDiv.append(setSpan);
-					});
-			});
+			var setSpan = function(set) {
+				var el = $('<span class="set">' + set.reps + 'x' + set.weight + '</span>');
+				if (set.set)
+					el.text(el.text() + '+' + set.set.reps +'x' + set.set.weight + ' ');
+				else
+					el.text(el.text() + ' ');
+				if (set.comment)
+					el.append($('<span class="sComment">(' + set.comment + ')</span>'));
+				return el;
+			};
 
-			wData.append(wDate).append(wMood).append(wComments);
-			wDiv.append(wData).append(esDiv);
-			container.append(wDiv);
-		};
+			var exerciseDiv = function(exercise) {
+				var el = $('<div class="exercise"></div>');
+				var nameDiv = $('<div class="eName">' + exercise.name + '</div>');
+				el.append(nameDiv);
+				return el;
+			};
 
-		$(function() {
-				$.getJSON("/lift/workouts/find", function(data) {
-					var workoutsCont = $('#workouts');
-					workoutsCont.empty();
-					$.each(data.rows.reverse(), function(index, workout) {
-						appendWorkout(workoutsCont, workout);
-					});
+			var appendWorkout = function(container, workout) {
+				var dateString = new Date(workout.start).toDateString();
+				var startTime = formatTime(new Date(workout.start));
+				var endTime = formatTime(new Date(workout.end));
+
+				var wDiv = $('<div class="workout"></div>');
+				var wData = $('<div class="wData"/>');
+
+				var wDate = $('<div class="wDate">' + dateString + '</div>');
+				var wTimes = $('<div class="wTimes">' + startTime + ' to ' + endTime + '</div>');
+				var wMood = $('<div class="wMood">' + workout.mood + '</div>');
+				var wComments = $('<div class="wComments">' + workout.comments + '</div>');
+
+				wData.append(wDate).append(wTimes).append(wMood).append(wComments);
+
+				var esDiv = $('<div class="exercises"></div>');
+				$.each(workout.exercises, function(index, exercise) {
+						var eDiv = exerciseDiv(exercise);
+						$.each(exercise.sets, function(index, set) { eDiv.append(setSpan(set)); });
+						esDiv.append(eDiv);
 				});
-		});
+
+				wDiv.append(wData).append(esDiv);
+				container.append(wDiv);
+			};
+
+			var appendExercise = function(cont, exercise) {
+				var eDiv = exerciseDiv(exercise);
+
+        var setsTable = $('<table><thead><tr><th class="eDate">Date</th><th class="eSets">Sets</th><th class="eVol">Volume</th></tr></thead></table>');
+        var setsTbody = $('<tbody/>');
+        setsTable.append(setsTbody);
+				$.each(exercise.workouts, function(index, workout) {
+          var row = $('<tr/>');
+
+          var dateString = new Date(workout.start).toDateString();
+          var dateCell = $('<td>' + dateString + '</td>');
+
+          var setsCell = $('<td/>');
+          $.each(workout.sets, function (index, set) { setsCell.append(setSpan(set)); });
+
+          var volCell = $('<td/>');
+          volCell.text(workout.volume.toString());
+
+          row.append(dateCell).append(setsCell).append(volCell);
+          setsTbody.append(row);
+				});
+
+        eDiv.append(setsTable);
+				cont.append(eDiv);
+			};
+
+			var hideAll = function() {
+				$('#workouts').hide();
+				$('#exercises').hide();
+			};
+
+			var workoutsLoaded = false;
+
+			var showAllWorkouts = function() {
+				var workoutsCont = $('#workouts');
+				if (!workoutsLoaded) {
+					workoutsLoaded = true;
+					$.getJSON("/api/workouts/full", function(data) {
+						$.each(data.reverse(), function(index, workout) {
+							appendWorkout(workoutsCont, workout);
+						});
+					});
+				}
+				workoutsCont.show();
+			};
+
+			var exercisesLoaded = false;
+
+			var showExercises = function() {
+				var exercisesCont = $('#exercises');
+				if (!exercisesLoaded) {
+					exercisesLoaded = true;
+					$.getJSON("/api/exercises/full", function(data) {
+						$.each(data, function(index, exercise) {
+							appendExercise(exercisesCont, exercise);
+						});
+					});
+				}
+				exercisesCont.show();
+			};
+
+			$(function() {
+					$('#workoutsNavLink').click(function() { hideAll(); showAllWorkouts(); return false; });
+					$('#exercisesNavLink').click(function() { hideAll(); showExercises(); return false; });
+          showAllWorkouts();
+			});
+		})();
 	</script>
 </body>
 </html>
