@@ -47,9 +47,9 @@ MongoClient.connect('mongodb://127.0.0.1:27017/lift', function(err, db) {
 
   var server = http.createServer(function(request, response) {
     if (request.url == '/api/workouts/full') {
-      jsonArray(workouts.find(), response);
+      jsonArray(workouts.find().sort({start:-1}), response);
     } else if (request.url == '/api/workouts') {
-      jsonArray(workouts.find({},{"_id":1,start:1}), response);
+      jsonArray(workouts.find({},{"_id":1,start:-1}).sort({start:1}), response);
     } else if (request.url == '/api/exercises/full') {
       exercisesFull(workouts, function(err, result) {
         okJson(response);

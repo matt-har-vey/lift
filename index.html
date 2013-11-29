@@ -128,7 +128,7 @@
 				if (!workoutsLoaded) {
 					workoutsLoaded = true;
 					$.getJSON("/api/workouts/full", function(data) {
-						$.each(data.reverse(), function(index, workout) {
+						$.each(data, function(index, workout) {
 							appendWorkout(workoutsCont, workout);
 						});
 					});
