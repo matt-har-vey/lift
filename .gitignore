@@ -8,3 +8,5 @@ y.tab.c
 y.output
 data/
 node_modules/
+.DS_Store
+.*.swp
