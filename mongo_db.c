@@ -1,6 +1,6 @@
 #include "db.h"
-#include "mongo.h"
 
+#include <mongoc.h>
 #include <time.h>
 #include <stdlib.h>
 
